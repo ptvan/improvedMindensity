@@ -97,7 +97,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   
 }
 
-getSampleStats <- function(gs, chnl) {
+getSampleStats <- function(gs, chnl, adj=2) {
   # NOTE: WILL NEED SOME INPUT CHECKING HERE
   require(openCyto)
   sampleCount <- length(gs) 
@@ -119,8 +119,7 @@ getSampleStats <- function(gs, chnl) {
                             num_max=0, 
                             num_shoulders=0,
                             peaks_xdist=0,
-                            flags="",
-                            new_cut=0
+                            flags=""
   )
   
   keys <- c("sample","channel")
@@ -133,15 +132,21 @@ getSampleStats <- function(gs, chnl) {
     
     s <- samples[i]
     cat(s, "\n")
+    
+    # get current gate cutpoints: cut_x is the gate boundary
+    g <- getGate(gs[[s]], gateName)
+    if (is.infinite(g@min)) cut_x <- g@max
+    if (is.infinite(g@max)) cut_x <- g@min
       
     tmp <- getData(gs[[s]], gateName)
     tmp <- openCyto:::.truncate_flowframe(tmp, channels = chnl, min=1)
     tmp <- exprs(tmp[,chnl])
     
-    x <- improvedMindensity(tmp, plot=F, gate_range=c(1,4), adjust=2)
+    # cut_y has to be calculated from the same density originally used to generate the gate
+    d <- density(tmp, adjust=adj)
+    cut_y <- d$density$y[which(d$density$x == cut_x)]
     
-    cut_x <- x$final_cut
-    cut_y <- x$density$y[which(x$density$x == x$final_cut)]
+    x <- improvedMindensity(tmp, plot=F, gate_range=c(1,4), adjust=adj)
     
     num_min <- length(x$minima)
     num_max <- length(x$maxima)
@@ -210,28 +215,25 @@ flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   return(sampleStats)
 }
   
-regateBadSamples <- function(gs, sampleStats, chnl, plot=F, verbose=T){
-   cat("regating", length(chnl), "1D gates for", length(gs), "samples...\n")
+regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
+   cat("gs has", length(gs), "samples...\n")
   # for each channel, get good samples and bad samples
     gate_name <- names(chnl)
-    
-    chnl <- unlist(gates)[i]
 #     isParentRoot <- FALSE
 #     if (getParent(gs, gate_name)) { isParentRoot <- TRUE}
     
-    bad_samples <- subset(sampleStats, flags != "")
+    bad_samples <- subset(sampleStats, flags=="FL"|flags=="FR")
     bad_samples <- subset(bad_samples, channel == chnl)$sample
-    if (verbose){  
-      cat(gate_name, ":", length(bad_samples), "outlier samples \n")
-    }
+
+    cat(gate_name, ":", length(bad_samples), "outlier samples \n")
+    
     if (length(bad_samples) > 0){
-      good_samples <- subset(sampleStats, flags == "")
+      good_samples <- subset(sampleStats, flags!="FR"|flags!="FL")
       good_samples <- subset(good_samples, channel == chnl)$sample
       
       cuts_x <- sampleStats[sample %in% good_samples & channel == chnl & peaks_xdist != 0]$cut_x
       cuts_xmedian <- median(cuts_x)
       peaks_xdist_median <- median(sampleStats[sample %in% good_samples & channel == chnl & peaks_xdist != 0]$peaks_xdist)
-     
       for (j in 1:length(bad_samples)){ 
         s <- bad_samples[j]
         p <- getParent(gs, gate_name)
@@ -244,20 +246,19 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, verbose=T){
         # and set feature closest in X-coordinate to the sample's median
         cut_candidates <- c(x$minima, x$shoulders)
         new_cut <- cut_candidates[which.min(abs(cut_candidates - cuts_xmedian))]
-       
-        g_coords <- list(c(new_cut, Inf))
-        names(g_coords) <- chnl
-        g_filterId <- getGate(gs[[s]], gate_name)@filterId
+        cat("   ", s, ":",x$final_cut," -> ", new_cut, "\n")
         
-        g <- rectangleGate(g_coords, filterId = g_filterId)
-        # remove old gate and add new one
-        
-        flowWorkspace::Rm(gate_name, gs[[s]])
-        add(gs[[s]], g, parent=getParent(gs, gate_name))
-        
-        if (verbose){
-          cat("   ", s, ":",x$final_cut," -> ", new_cut, "\n")
-        }     
+        if (execute){
+          g_coords <- list(c(new_cut, Inf))
+          names(g_coords) <- chnl
+          g_filterId <- getGate(gs[[s]], gate_name)@filterId
+          g <- rectangleGate(g_coords, filterId = g_filterId)
+          
+          # remove old gate and add new one
+          flowWorkspace::Rm(gate_name, gs[[s]])
+          add(gs[[s]], g, parent=getParent(gs, gate_name))
+        }
+          
         if (plot){
           par(mfrow=c(3,1))
           plot(x$density, type="l", main=paste(s, chnl, "features"), xlab="", ylab="density")
