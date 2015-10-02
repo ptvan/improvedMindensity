@@ -127,10 +127,10 @@ getSampleStats <- function(gs, chnl, adj=2) {
   keys <- c("sample","channel")
   setkeyv(featureList, keys)
   setkeyv(sampleStats, keys)
+  gateName <- names(chnl)
   cat("   ",  chnl, gateName, " \n")
 
   for (i in 1:sampleCount){
-    gateName <- names(chnl)
     
     s <- samples[i]
     cat(s, "\n")
