@@ -97,7 +97,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   
 }
 
-getSampleStats <- function(gs, gates) {
+getSampleStats <- function(gs, chnl) {
   # NOTE: WILL NEED SOME INPUT CHECKING HERE
   require(openCyto)
   sampleCount <- length(gs) 
@@ -110,8 +110,6 @@ getSampleStats <- function(gs, gates) {
                             feature_type = "",
                             feature_coord =""
   )
-  
-  
   sampleStats <- data.table(sample = rep(samples, length(gates)),
                             channel = unlist(lapply(gates, function(x) rep(x,sampleCount))),
                             pop="",
@@ -121,7 +119,8 @@ getSampleStats <- function(gs, gates) {
                             num_max=0, 
                             num_shoulders=0,
                             peaks_xdist=0,
-                            flags=""
+                            flags="",
+                            new_cut=0
   )
   
   keys <- c("sample","channel")
@@ -129,96 +128,92 @@ getSampleStats <- function(gs, gates) {
   setkeyv(sampleStats, keys)
   
   for (i in 1:sampleCount){
+    gateName <- names(chnl)
+    cat("   ",  chnl, gateName, " \n")
+    
     s <- samples[i]
     cat(s, "\n")
-    for (j in 1:length(gates)){
-      chnl <- unlist(gates[j])
-      gateName <- names(gates)[j]
-      cat("   ", chnl, gateName, " \n")
       
-      tmp <- getData(gs[[s]], gateName)
-      tmp <- openCyto:::.truncate_flowframe(tmp, channels = chnl, min=1)
-      tmp <- exprs(tmp[,chnl])
-      
-      x <- improvedMindensity(tmp, plot=F, gate_range=c(1,4), adjust=2)
-      
-      cut_x <- x$final_cut
-      cut_y <- x$density$y[which(x$density$x == x$final_cut)]
-      
-      num_min <- length(x$minima)
-      num_max <- length(x$maxima)
-      num_shoulders <- length(x$shoulders)
-      
-      # save sample stats in sampleStats
-      sampleStats[sample == s & channel == chnl]$pop <- names(which(gates == chnl))
-      sampleStats[sample == s & channel == chnl]$cut_y <- cut_y
-      sampleStats[sample == s & channel == chnl]$cut_x <- cut_x
-      sampleStats[sample == s & channel == chnl]$num_min <- num_min
-      sampleStats[sample == s & channel == chnl]$num_max <- num_max
-      sampleStats[sample == s & channel == chnl]$num_shoulders <- num_shoulders
-      
-      if (num_max == 2){
-        # there are two peaks, record their X-distance
-        sampleStats[sample == s & channel == chnl]$peaks_xdist <- abs(x$maxima[1] - x$maxima[2])
-      } 
-      if (num_max == 1) { 
-        # just 1 peak, set X-distance to distance between peak & cut point
-        sampleStats[sample == s & channel == chnl]$peaks_xdist <- abs(x$maxima[1] - x$final_cut)
-      }
-      
-      # save all features into featureList
-      if (num_shoulders > 0){
-        l <- lapply(as.list(x$shoulders), function(x) c(s,chnl,"shoulder",x))
-        l <- as.data.table(t(sapply(l, rbind)))
-        colnames(l) <- colnames(featureList)
-        featureList <-  rbindlist(list(l, featureList), use.names = F, fill = F)  
-      }
-      
-      if (num_max > 0){
-        l <- lapply(as.list(x$maxima), function(x) c(s,chnl,"maxima",x))
-        l <- as.data.table(t(sapply(l, rbind)))
-        colnames(l) <- colnames(featureList)
-        featureList <-  rbindlist(list(l, featureList), use.names = F, fill = F) 
-      }
-      
-      if (num_min > 0){
-        l <- lapply(as.list(x$minima), function(x) c(s,chnl,"minima",x))
-        l <- as.data.table(t(sapply(l, rbind)))
-        colnames(l) <- colnames(featureList)
-        featureList <-  rbindlist(list(l, featureList), use.names = F, fill = F)    
-      }
-      
+    tmp <- getData(gs[[s]], gateName)
+    tmp <- openCyto:::.truncate_flowframe(tmp, channels = chnl, min=1)
+    tmp <- exprs(tmp[,chnl])
+    
+    x <- improvedMindensity(tmp, plot=F, gate_range=c(1,4), adjust=2)
+    
+    cut_x <- x$final_cut
+    cut_y <- x$density$y[which(x$density$x == x$final_cut)]
+    
+    num_min <- length(x$minima)
+    num_max <- length(x$maxima)
+    num_shoulders <- length(x$shoulders)
+    
+    # save sample stats in sampleStats
+    sampleStats[sample == s & channel == chnl]$pop <- names(which(gates == chnl))
+    sampleStats[sample == s & channel == chnl]$cut_y <- cut_y
+    sampleStats[sample == s & channel == chnl]$cut_x <- cut_x
+    sampleStats[sample == s & channel == chnl]$num_min <- num_min
+    sampleStats[sample == s & channel == chnl]$num_max <- num_max
+    sampleStats[sample == s & channel == chnl]$num_shoulders <- num_shoulders
+    
+    if (num_max == 2){
+      # there are two peaks, record their X-distance
+      sampleStats[sample == s & channel == chnl]$peaks_xdist <- abs(x$maxima[1] - x$maxima[2])
+    } 
+    if (num_max == 1) { 
+      # just 1 peak, set X-distance to distance between peak & cut point
+      sampleStats[sample == s & channel == chnl]$peaks_xdist <- abs(x$maxima[1] - x$final_cut)
     }
-    cat("\n")
+    
+    # save all features into featureList
+    if (num_shoulders > 0){
+      l <- lapply(as.list(x$shoulders), function(x) c(s,chnl,"shoulder",x))
+      l <- as.data.table(t(sapply(l, rbind)))
+      colnames(l) <- colnames(featureList)
+      featureList <-  rbindlist(list(l, featureList), use.names = F, fill = F)  
+    }
+    
+    if (num_max > 0){
+      l <- lapply(as.list(x$maxima), function(x) c(s,chnl,"maxima",x))
+      l <- as.data.table(t(sapply(l, rbind)))
+      colnames(l) <- colnames(featureList)
+      featureList <-  rbindlist(list(l, featureList), use.names = F, fill = F) 
+    }
+    
+    if (num_min > 0){
+      l <- lapply(as.list(x$minima), function(x) c(s,chnl,"minima",x))
+      l <- as.data.table(t(sapply(l, rbind)))
+      colnames(l) <- colnames(featureList)
+      featureList <-  rbindlist(list(l, featureList), use.names = F, fill = F)    
+    }
+    
+  
+  cat("\n")
   }
   featureList$feature_coord <- as.numeric(featureList$feature_coord)
   return(list(sampleStats, featureList))  
 } 
   
-flagBadSamples <- function(sampleStats, channels, mad_thresh = 3){
+flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   # NEEDS INPUT CHECKING HERE !!!
-  for (i in 1:length(channels)){
-    chnl <- channels[i]
-    cat(chnl, ":")
-    g <- sampleStats[channel == chnl]
-    ut <- (mad(g$cut_x) * mad_thresh) + median(g$cut_x)
-    lt <- median(g$cut_x) - (mad(g$cut_x) * mad_thresh)  
-    far_right <- g$sample[which(g$cut_x > ut)]
-    far_left <- g$sample[which(g$cut_x < lt)]
-    sampleStats[sample %in% far_left & channel == chnl]$flags <- "FL"
-    sampleStats[sample %in% far_right & channel == chnl]$flags <- "FR"
-    
-    cat(length(far_left), "far_left, ", length(far_right), "far_right")
-    cat("\n")
-  }
+  cat(chnl, ":")
+  g <- sampleStats[channel == chnl]
+  ut <- (mad(g$cut_x) * mad_thresh) + median(g$cut_x)
+  lt <- median(g$cut_x) - (mad(g$cut_x) * mad_thresh)  
+  far_right <- g$sample[which(g$cut_x > ut)]
+  far_left <- g$sample[which(g$cut_x < lt)]
+  sampleStats[sample %in% far_left & channel == chnl]$flags <- "FL"
+  sampleStats[sample %in% far_right & channel == chnl]$flags <- "FR"
+  
+  cat(length(far_left), "far_left, ", length(far_right), "far_right")
+  cat("\n")
+  
   return(sampleStats)
 }
   
-regateBadSamples <- function(gs, sampleStats, gates, plot=F, verbose=T){
-   cat("regating", length(gates), "1D gates for", length(gs), "samples...\n")
-  for (i in 1:length(gates)){
-    # for each channel, get good samples and bad samples
-    gate_name <- names(gates)[i]
+regateBadSamples <- function(gs, sampleStats, chnl, plot=F, verbose=T){
+   cat("regating", length(chnl), "1D gates for", length(gs), "samples...\n")
+  # for each channel, get good samples and bad samples
+    gate_name <- names(chnl)
     
     chnl <- unlist(gates)[i]
 #     isParentRoot <- FALSE
@@ -285,7 +280,7 @@ regateBadSamples <- function(gs, sampleStats, gates, plot=F, verbose=T){
         }
       }
     }  
-  }
+  
   # update the gatingSet with new cell counts
   recompute(gs)
 }  
