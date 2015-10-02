@@ -272,7 +272,7 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
           abline(v = x$final_cut,col="gray")
           
           plot(x$density, type="l", main="new_cut", xlab="", ylab="density")
-          rug(cuts_x)
+          rug(cuts_x, col="red")
           abline(v = x$final_cut,col="gray")
           abline(v = new_cut,col="black")
           

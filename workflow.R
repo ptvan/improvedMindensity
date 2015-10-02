@@ -65,7 +65,7 @@ chnls <- unlist(gates)
 chnl <- chnls
 
 # png("output/improvedMindensity_live_marker_before_Oct01.png", width=1000,height=1000)
-# plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "live, before")
+plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "live, before")
 # dev.off()
 
 png("output/improvedMindensity_CD19_marker_before_Oct01.png", width=1000,height=1000)
@@ -90,10 +90,10 @@ save(sampleStats, file="output/sampleStats.RData")
 save(featureList, file="output/featureList.RData")
 
 # regate problematic samples
-regateBadSamples(gs, sampleStats, gates, plot=F, verbose=T)
+regateBadSamples(gs, sampleStats, chnl, plot=F, verbose=T)
 
 png("output/improvedMindensity_live_marker_after_Oct01.png", width=1000,height=1000)
-plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "live, after")
+plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "ragonCAVD2015Jul live marker, after regating")
 dev.off()
 
 png("output/improvedMindensity_CD19_marker_after_Oct01.png", width=1000,height=1000)
