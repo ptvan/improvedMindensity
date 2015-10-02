@@ -6,14 +6,16 @@
 # it requires openCyto and data.table 
 # 
 # To use: 
-# 1. call getSampleStats() on a gatingSet. This will perform 1D gating 
-# using improvedMindensity() and generates sampleStats and featureList 
+# 1. call getSampleStats() on a gatingSet and the channel to work on. 
+# This will perform 1D gating using improvedMindensity() and generate
+# sampleStats and featureList tables
 #
 # 2. call flagBadSamples() on generated sampleStats. This will flag samples
 # with cutpoints outside the threshold (default = 3 Mean Adjusted Deviates) 
 # as Far Left or Far Right within their respective channel 
 # 
-# 3. call regateBadSamples() on gatingSet and sampleStats
+# 3. call regateBadSamples() on gatingSet and sampleStats, which will generate
+# new cutpoints for bad samples, set `execute=T` to write new cutpoints to the gatingSet
 
 
 improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
@@ -119,16 +121,16 @@ getSampleStats <- function(gs, chnl, adj=2) {
                             num_max=0, 
                             num_shoulders=0,
                             peaks_xdist=0,
-                            flags=""
+                            flags=" "
   )
   
   keys <- c("sample","channel")
   setkeyv(featureList, keys)
   setkeyv(sampleStats, keys)
-  
+  cat("   ",  chnl, gateName, " \n")
+
   for (i in 1:sampleCount){
     gateName <- names(chnl)
-    cat("   ",  chnl, gateName, " \n")
     
     s <- samples[i]
     cat(s, "\n")
@@ -200,7 +202,8 @@ getSampleStats <- function(gs, chnl, adj=2) {
   
 flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   # NEEDS INPUT CHECKING HERE !!!
-  cat(chnl, ":")
+  cat(chnl)
+  sampleStats$flags <- " "
   g <- sampleStats[channel == chnl]
   ut <- (mad(g$cut_x) * mad_thresh) + median(g$cut_x)
   lt <- median(g$cut_x) - (mad(g$cut_x) * mad_thresh)  
@@ -209,6 +212,7 @@ flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   sampleStats[sample %in% far_left & channel == chnl]$flags <- "FL"
   sampleStats[sample %in% far_right & channel == chnl]$flags <- "FR"
   
+  cat(" median =", median(g$cut_x), "[", lt, ",", ut, "] @ MAD =", mad_thresh , "\n")
   cat(length(far_left), "far_left, ", length(far_right), "far_right")
   cat("\n")
   
@@ -246,9 +250,10 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
         # and set feature closest in X-coordinate to the sample's median
         cut_candidates <- c(x$minima, x$shoulders)
         new_cut <- cut_candidates[which.min(abs(cut_candidates - cuts_xmedian))]
-        cat("   ", s, ":",x$final_cut," -> ", new_cut, "\n")
+        cat("   ", s, ":",x$final_cut," -> ", new_cut)
         
         if (execute){
+          cat("updating gate.... ")
           g_coords <- list(c(new_cut, Inf))
           names(g_coords) <- chnl
           g_filterId <- getGate(gs[[s]], gate_name)@filterId
@@ -257,6 +262,7 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
           # remove old gate and add new one
           flowWorkspace::Rm(gate_name, gs[[s]])
           add(gs[[s]], g, parent=getParent(gs, gate_name))
+          cat("DONE !")
         }
           
         if (plot){
@@ -279,11 +285,13 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
           par(mfrow=c(1,1))
           li <- readline()
         }
+        cat("\n")
       }
     }  
   
   # update the gatingSet with new cell counts
   if (execute) {
+    cat("recomputing event stats...")
     recompute(gs)
   }
 }  

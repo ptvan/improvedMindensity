@@ -2,7 +2,7 @@ alias,pop,parent,dims,gating_method,gating_args,collapseDataForGating,groupBy,pr
 not_beads,Ce140Di-,root,Ce140Di,mindensity2,"min=1",,,,
 dna,dna,not_beads,"DNA1,DNA2",flowClust,K=2,,,prior_flowClust,K=2
 live,Rh103Di-,dna,Rh103Di,mindensity2,"min=1",,,,
-CD19neg,Nd142Di-,live,CD19,mindensity2,"min=1",,,,
+CD19neg,Nd142Di-,live,CD19,mindensity2,"min=1,gate_range=c(1,4)",,,,
 
 
 
