@@ -64,7 +64,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
     }                                         
   } else if (length(which(minima == TRUE)) > 1) { # multiple minima
     m <- sp$x[which(minima)]
-    m <- min(sp$y[which(sp$x %in% m)])  # pick the minima with lower y
+    m <- min(sp$y[which(sp$x %in% m)])  # pick the minima with lowest y
     pt <- sp$x[which(sp$y == m)]
     
     
@@ -219,7 +219,7 @@ flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   return(sampleStats)
 }
   
-regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
+regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=F){
    cat("gs has", length(gs), "samples...\n")
   # for each channel, get good samples and bad samples
     gate_name <- names(chnl)
@@ -253,7 +253,7 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
         cat("   ", s, ":",x$final_cut," -> ", new_cut)
         
         if (execute){
-          cat("updating gate.... ")
+          cat(" UPDATING GATE.... ")
           g_coords <- list(c(new_cut, Inf))
           names(g_coords) <- chnl
           g_filterId <- getGate(gs[[s]], gate_name)@filterId
