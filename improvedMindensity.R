@@ -283,7 +283,9 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=T){
     }  
   
   # update the gatingSet with new cell counts
-  recompute(gs)
+  if (execute) {
+    recompute(gs)
+  }
 }  
 
 getChannelsPops <- function(gs){

@@ -56,26 +56,21 @@ source("improvedMindensity.R")
 
 gates <- getChannelsPops(gs)
 gates <- gates[2]
+chnl <- unlist(gates)
 
-out <- getSampleStats(gs, gates)
+out <- getSampleStats(gs, chnl)
 sampleStats <- out[[1]]
 featureList <- out[[2]]
 
-chnls <- unlist(gates)
-chnl <- chnls
-
-# png("output/improvedMindensity_live_marker_before_Oct01.png", width=1000,height=1000)
-plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "live, before")
+# png("output/improvedMindensity_live_marker_before_Oct02.png", width=1000,height=1000)
+# plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "ragonCAVD2015Jul live, before")
 # dev.off()
 
-png("output/improvedMindensity_CD19_marker_before_Oct01.png", width=1000,height=1000)
-plotGate(gs,"live", default.y = "Nd142Di", type="densityplot", main = "live, before")
+png("output/improvedMindensity_CD19_marker_before_Oct02.png", width=1000,height=1000)
+plotGate(gs,"CD19neg", default.y = "Nd142Di", type="densityplot", main = "ragonCAVD2015Jul CD19, before")
 dev.off()
 
-
-
 sampleStats <- flagBadSamples(sampleStats, chnl)
-sampleStats[channel == "Rh103Di" & flags != ""]
 
 # Rh103Di = live
 # Nd142Di = CD19
@@ -90,14 +85,14 @@ save(sampleStats, file="output/sampleStats.RData")
 save(featureList, file="output/featureList.RData")
 
 # regate problematic samples
-regateBadSamples(gs, sampleStats, chnl, plot=F, verbose=T)
+regateBadSamples(gs, sampleStats, chnl, plot=F, execute=F)
 
-png("output/improvedMindensity_live_marker_after_Oct01.png", width=1000,height=1000)
-plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "ragonCAVD2015Jul live marker, after regating")
-dev.off()
+# png("output/improvedMindensity_live_marker_after_Oct2.png", width=1000,height=1000)
+# plotGate(gs,"live", default.y = "Rh103Di", type="densityplot", main = "ragonCAVD2015Jul live, after regating")
+# dev.off()
 
-png("output/improvedMindensity_CD19_marker_after_Oct01.png", width=1000,height=1000)
-plotGate(gs,"CD19neg", default.y = "Nd142Di", type="densityplot", main = "CD19, after")
-dev.off()
+# png("output/improvedMindensity_CD19_marker_after_Oct02.png", width=1000,height=1000)
+# plotGate(gs,"CD19neg", default.y = "Nd142Di", type="densityplot", main = "ragonCAVD2015Jul CD19, after")
+# dev.off()
 
 
