@@ -219,7 +219,7 @@ flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   return(sampleStats)
 }
   
-regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=F){
+regateBadSamples <- function(gs, sampleStats, chnl, plot=F, negative=F, execute=F){
    cat("gs has", length(gs), "samples...\n")
   # for each channel, get good samples and bad samples
     gate_name <- names(chnl)
@@ -253,8 +253,13 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, execute=F){
         cat("   ", s, ":",x$final_cut," -> ", new_cut)
         
         if (execute){
-          cat(" UPDATING GATE.... ")
-          g_coords <- list(c(new_cut, Inf))
+          cat(" Updating gate....")
+          if (negative){
+            g_coords <- list(c(-Inf, new_cut))
+            cat(" negative gate...")
+          } else {
+            g_coords <- list(c(new_cut, Inf))
+          }
           names(g_coords) <- chnl
           g_filterId <- getGate(gs[[s]], gate_name)@filterId
           g <- rectangleGate(g_coords, filterId = g_filterId)
