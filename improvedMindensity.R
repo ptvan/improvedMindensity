@@ -33,7 +33,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
     }
   }
   
-  sp <- smooth.spline(dens$x,dens$y)
+  sp <<- smooth.spline(dens$x,dens$y)
   pred <- predict(sp)
   
   d1 <- predict(sp,deriv = 1)
@@ -47,6 +47,13 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   maxima <- sign(d1$y[-1])<0&sign(d1$y[-length(d1$y)])>0
   shoulders <- sign(d3$y[-1])<0&sign(d3$y[-length(d3$y)])>0
   
+  minima_xcoords <- sp$x[which(minima)] # x-coords of minima
+  maxima_xcoords <- sp$x[which(maxima)] # x-coords of minima
+  
+  minima_ycoords <- sp$y[which(sp$x %in% minima_xcoords)]
+  maxima_ycoords <- sp$y[which(sp$x %in% maxima_xcoords)]
+  
+    
   if (length(which(minima == TRUE)) == 0){ # no minima found, look through shoulders
     # if there is a peak, pick first shoulder to the right of peak  
     if (length(which(maxima == TRUE)) == 1  ){ 
@@ -63,8 +70,8 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
       pt <- sp$x[median(which(shoulders))]    
     }                                         
   } else if (length(which(minima == TRUE)) > 1) { # multiple minima
-    m <- sp$x[which(minima)]
-    m <- min(sp$y[which(sp$x %in% m)])  # pick the minima with lowest y
+    
+    m <- min(sp$y[which(sp$x %in% minima_xcoords)])  # pick the minima with lowest y
     pt <- sp$x[which(sp$y == m)]
     
     
@@ -74,8 +81,8 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   }
   
   .plots = function(){
-    abline(v = d2$x[which(inf1)],col="red")       # red    == inflection point
-    abline(v = d2$x[which(inf2)],col="green")     # green  == inflection point
+#     abline(v = d2$x[which(inf1)],col="red")       # red    == inflection point
+#     abline(v = d2$x[which(inf2)],col="green")     # green  == inflection point
     abline(v = d2$x[which(maxima)],col="blue")    # blue   == maxima
     abline(v = d2$x[which(minima)],col="orange")  # orange == minima
     abline(v = d2$x[which(shoulders)],col="pink") # pink   == shoulders
@@ -92,8 +99,10 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   return(list(density = sp,
               inf_rising = sp$x[which(inf1)],
               inf_falling = sp$x[which(inf2)],
-              maxima = sp$x[which(maxima)],
-              minima = sp$x[which(minima)],
+              maxima = maxima_xcoords,
+              minima = minima_xcoords,
+              maxima_heights = maxima_ycoords,
+              minima_heights = minima_ycoords,
               shoulders = sp$x[which(shoulders)], 
               final_cut = pt))
   
