@@ -33,7 +33,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
     }
   }
   
-  sp <<- smooth.spline(dens$x,dens$y)
+  sp <- smooth.spline(dens$x,dens$y)
   pred <- predict(sp)
   
   d1 <- predict(sp,deriv = 1)
@@ -48,10 +48,10 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   shoulders <- sign(d3$y[-1])<0&sign(d3$y[-length(d3$y)])>0
   
   minima_xcoords <- sp$x[which(minima)] # x-coords of minima
-  maxima_xcoords <- sp$x[which(maxima)] # x-coords of minima
+  maxima_xcoords <- sp$x[which(maxima)] # x-coords of maxnima
   
-  minima_ycoords <- sp$y[which(sp$x %in% minima_xcoords)]
-  maxima_ycoords <- sp$y[which(sp$x %in% maxima_xcoords)]
+  minima_ycoords <- sp$y[which(sp$x %in% minima_xcoords)] # y-coords of minima
+  maxima_ycoords <- sp$y[which(sp$x %in% maxima_xcoords)] # y-coords of maxima
   
     
   if (length(which(minima == TRUE)) == 0){ # no minima found, look through shoulders
@@ -306,7 +306,7 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, negative=F, execute=
   # update the gatingSet with new cell counts
   if (execute) {
     cat("recomputing event stats...")
-    recompute(gs)
+    recompute(gs, gate_name)
   }
 }  
 
