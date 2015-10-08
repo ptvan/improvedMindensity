@@ -48,7 +48,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   shoulders <- sign(d3$y[-1])<0&sign(d3$y[-length(d3$y)])>0
   
   minima_xcoords <- sp$x[which(minima)] # x-coords of minima
-  maxima_xcoords <- sp$x[which(maxima)] # x-coords of maxnima
+  maxima_xcoords <- sp$x[which(maxima)] # x-coords of maxima
   
   minima_ycoords <- sp$y[which(sp$x %in% minima_xcoords)] # y-coords of minima
   maxima_ycoords <- sp$y[which(sp$x %in% maxima_xcoords)] # y-coords of maxima
@@ -108,7 +108,7 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   
 }
 
-getSampleStats <- function(gs, chnl, adj=2) {
+getSampleStats <- function(gs, chnl, g_range=c(1,4), adj=2) {
   # NOTE: WILL NEED SOME INPUT CHECKING HERE
   require(openCyto)
   sampleCount <- length(gs) 
@@ -157,7 +157,7 @@ getSampleStats <- function(gs, chnl, adj=2) {
     d <- density(tmp, adjust=adj)
     cut_y <- d$density$y[which(d$density$x == cut_x)]
     
-    x <- improvedMindensity(tmp, plot=F, gate_range=c(1,4), adjust=adj)
+    x <- improvedMindensity(tmp, plot=F, gate_range=g_range, adjust=adj)
     
     num_min <- length(x$minima)
     num_max <- length(x$maxima)
@@ -255,7 +255,7 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, negative=F, execute=
         tmp <- openCyto:::.truncate_flowframe(tmp, channels = chnl, min=1)
         tmp <- exprs(tmp[,chnl])
         x <- improvedMindensity(tmp, plot=F, gate_range=c(1,4))
-        # get the cut candidates (features detected by improvedMindensity(), excluding current cut point)
+        # get cut candidates (features detected by improvedMindensity() excluding current cut point)
         # and set feature closest in X-coordinate to the sample's median
         cut_candidates <- c(x$minima, x$shoulders)
         new_cut <- cut_candidates[which.min(abs(cut_candidates - cuts_xmedian))]
