@@ -18,6 +18,12 @@
 # new cutpoints for bad samples, set `execute=T` to write new cutpoints to the gatingSet
 
 
+#' choose a cutpoint for a cytometry data channel using minimal-density 
+#' @param D a \code{density} containing the data to operate on
+#' @param gate_range a \code{character} specifying the data range to operate on
+#' @param adjust a \code{numeric} specifying the amount of smoothing to be used
+#' @param plot a \code{boolean} specifying whether to output a plot
+
 improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   # construct the density from data and adjust params we were given
   dens <- density(D,adjust=adjust)
@@ -108,9 +114,17 @@ improvedMindensity <- function(D,adjust=2,gate_range=NA, plot = FALSE, ...){
   
 }
 
+
+#' get gating statistics for samples in a \code{gatingSet} for a particular channel
+#' @param gs a \code{character} specifying the \code{GatingSet} to operate on
+#' @param chnl a named \code{character} specifying the channel 
+#' @param g_range a \code{character} specifying the \code{gate_range=c(x,y)} parameter used
+#' @param adj a \code{numeric} specifying the \code{adjust=z} parameter used
+
 getSampleStats <- function(gs, chnl, g_range=c(1,4), adj=2) {
   # NOTE: WILL NEED SOME INPUT CHECKING HERE
   require(openCyto)
+  require(data.table)
   sampleCount <- length(gs) 
   samples <- sampleNames(gs)
 #   gates <- getChannelsPops(gs)
@@ -208,7 +222,13 @@ getSampleStats <- function(gs, chnl, g_range=c(1,4), adj=2) {
   featureList$feature_coord <- as.numeric(featureList$feature_coord)
   return(list(sampleStats, featureList))  
 } 
-  
+
+#' flag samples within a \code{gatingSet} as having cutpoints exceeding (F)ar(L)eft or (F)ar(R)ight 
+#' threshold of the population \code{median} by the specified Mean Adjusted Deviance
+#' @param sampleStats a \code{character} specifying the \code{sampleStats} data.table to operate on
+#' @param chnl a named \code{character} specifying the channel 
+#' @param mad_thresh a \code{numeric} specifying Mean Adjusted Deviances to be calculate outliers
+
 flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   # NEEDS INPUT CHECKING HERE !!!
   cat(chnl)
@@ -227,7 +247,17 @@ flagBadSamples <- function(sampleStats, chnl, mad_thresh = 3){
   
   return(sampleStats)
 }
-  
+
+#' regate bad samples flagged by \code{flagBadSamples()} 
+#' each bad sample's cutpoint is reset as to the feature (usually minimum) closest in x-coordinate to population median cutpoint
+#' 
+#' @param gs a \code{character} specifying the \code{GatingSet} to operate on
+#' @param sampleStats a \code{character} specifying the \code{sampleStats} data.table to operate on
+#' @param chnl a named \code{character} specifying the channel 
+#' @param plot a \code{boolean} specifying whether to plot (many samples = SLOW !)
+#' @param negative a \code{boolean} specifying whether the population is negative (eg. "CD19-")
+#' @param execute a \code{boolean} specifying whether to actually gate, or just report the new cutpoints
+
 regateBadSamples <- function(gs, sampleStats, chnl, plot=F, negative=F, execute=F){
    cat("gs has", length(gs), "samples...\n")
   # for each channel, get good samples and bad samples
@@ -309,6 +339,11 @@ regateBadSamples <- function(gs, sampleStats, chnl, plot=F, negative=F, execute=
     recompute(gs, gate_name)
   }
 }  
+
+#' returns a named \code{character} vector of gate names (eg "/root/not_beads") and marker (eg "FIT-C")
+#' NOTE: ONLY WORKS ON \code{rectangleGates} AND WILL NOT RETURN OTHER GATES !!!
+#' 
+#' @param gs a \code{character} specifying the \code{GatingSet} to operate on
 
 getChannelsPops <- function(gs){
   # translate channel names to gate names, only works with rectangleGates for now
